@@ -1,11 +1,11 @@
 import torch
 
 ##### start hyperparameters #####
-sequence_len = 32
-batch_size = 32
-n_embd = 12 # has to be devisible by n_heads
-n_heads = 2
-n_blocks = 1
+sequence_len = 128
+batch_size = 64
+n_embd = 64 # has to be devisible by n_heads
+n_heads = 4
+n_blocks = 3
 dropout = 0.2
 
 criterion = torch.nn.CrossEntropyLoss()
