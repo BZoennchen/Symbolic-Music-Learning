@@ -12,7 +12,7 @@ from tokenizer import GridEncoder
 from preprocessor import get_dataset
 
 
-PATH_TO_MODELS = './models/'
+PATH_TO_MODELS = './../models/'
 
 class Trainer:
     def __init__(self, model, device=torch.device('cpu')):
