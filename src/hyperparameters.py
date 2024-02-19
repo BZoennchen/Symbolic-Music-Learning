@@ -1,7 +1,7 @@
 import torch
 
 ##### start hyperparameters #####
-sequence_len = 128
+sequence_len = 128*2
 batch_size = 64
 n_embd = 64 # has to be devisible by n_heads
 n_heads = 4

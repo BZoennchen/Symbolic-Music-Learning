@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
 import torch.nn.functional as F
 from tokenizer import TERM_SYMBOL
 
@@ -9,8 +9,7 @@ class ScoreDataset(Dataset):
         self.in_between = in_between
         self.transform = transform
         self.term_symbol = term_symbol
-        sequences, symbols = self.__generate_sequences(sequence_len, enc_songs)
-        self.tensors = (torch.tensor(sequences), torch.tensor(symbols))
+        self.X, self.y  = self.__generate_sequences(sequence_len, enc_songs)
         #self.tensors = (F.one_hot(torch.tensor(
         #    sequences), num_classes=len(self.stoi_encoder)).float(), torch.tensor(symbols))
 
@@ -31,8 +30,8 @@ class ScoreDataset(Dataset):
         return X, y
     
     def __len__(self):
-        return self.tensors[0].size(0)
+        return len(self.X)
 
     def __getitem__(self, idx):
-        X, y = self.tensors[0][idx], self.tensors[1][idx]
+        X, y = torch.tensor(self.X[idx]), torch.tensor(self.y[idx])
         return X, y

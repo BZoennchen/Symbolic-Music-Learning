@@ -33,31 +33,32 @@ class Trainer:
             self.model.train(False)
             running_vloss = 0.0
             
-            for i, vdata in enumerate(val_loader):
+            with torch.no_grad():
+                for i, vdata in enumerate(val_loader):
+                    
+                    local_X, local_y = vdata
+                    local_X, local_y = local_X.to(self.device), local_y.to(self.device)
+                                
+                    voutputs = self.model(local_X)
+                    
+                    B, T, C = voutputs.shape
+                    voutputs = voutputs.view(B*T, C)
+                    local_y = local_y.view(B*T)
+                    
+                    vloss = criterion(voutputs, local_y)
+                    running_vloss += vloss
+                    
+                avg_vloss = running_vloss / (i+1)
+                print(
+                    f'Epoch [{epoch+1}/{n_epochs}], Train-Loss: {avg_loss:.4f}, Val-Loss: {avg_vloss:.4f}')
                 
-                local_X, local_y = vdata
-                local_X, local_y = local_X.to(self.device), local_y.to(self.device)
-                            
-                voutputs = self.model(local_X)
+                writer.add_scalars('Training vs. Validation Loss', {'Training': avg_loss, 'Validation': avg_vloss}, epoch)
+                writer.flush()
                 
-                B, T, C = voutputs.shape
-                voutputs = voutputs.view(B*T, C)
-                local_y = local_y.view(B*T)
-                
-                vloss = criterion(voutputs, local_y)
-                running_vloss += vloss
-                
-            avg_vloss = running_vloss / (i+1)
-            print(
-                f'Epoch [{epoch+1}/{n_epochs}], Train-Loss: {avg_loss:.4f}, Val-Loss: {avg_vloss:.4f}')
-            
-            writer.add_scalars('Training vs. Validation Loss', {'Training': avg_loss, 'Validation': avg_vloss}, epoch)
-            writer.flush()
-            
-            if not respect_val or (respect_val and avg_vloss < best_vloss):
-                best_vloss = avg_vloss
-                model_path = PATH_TO_MODELS+'/_model_{}_{}'.format(timestamp, epoch)
-                torch.save(self.model.state_dict(), model_path)
+                if not respect_val or (respect_val and avg_vloss < best_vloss):
+                    best_vloss = avg_vloss
+                    model_path = PATH_TO_MODELS+'/_model_{}_{}'.format(timestamp, epoch)
+                    torch.save(self.model.state_dict(), model_path)
 
     def train_one_epoch(self, epoch_index, tb_writer, n_epochs, train_loader: DataLoader):
         running_loss = 0.0
@@ -65,9 +66,10 @@ class Trainer:
         all_steps = n_epochs * len(train_loader)
         
         for i, data in enumerate(train_loader):
+            self.optimizer.zero_grad()
+            torch.cuda.empty_cache() # ??
             local_X, local_y = data
             local_X, local_y = local_X.to(self.device), local_y.to(self.device)
-            self.optimizer.zero_grad()
             outputs = self.model(local_X)
             
             #print(local_X.shape, local_y.shape)
@@ -78,6 +80,7 @@ class Trainer:
             loss = criterion(outputs, local_y)
             loss.backward()
             self.optimizer.step()
+            outputs.detach()
             
             running_loss += loss.item()
             if i % eval_interval == eval_interval-1:
